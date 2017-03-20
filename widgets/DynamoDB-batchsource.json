@@ -122,16 +122,31 @@
   ],
   "outputs": [
     {
-      "widget-type": "non-editable-schema-editor",
-      "schema": {
-        "name": "etlSchemaBody",
-        "type": "record",
-        "fields": [
-          {
-            "name": "body",
-            "type": "string"
-          }
-        ]
+      "name": "schema",
+      "widget-type": "schema",
+      "widget-attributes": {
+        "default-schema": {
+          "name": "etlSchemaBody",
+          "type": "record",
+          "fields": [
+            {
+              "name": "body",
+              "type": "string"
+            }
+          ]
+        },
+        "widget-attributes": {
+          "schema-types": [
+            "boolean",
+            "int",
+            "long",
+            "float",
+            "double",
+            "bytes",
+            "string"
+          ],
+          "schema-default-type": "string"
+        }
       }
     }
   ]

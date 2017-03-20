@@ -33,6 +33,7 @@ import com.amazonaws.services.dynamodbv2.document.Item;
 import com.google.common.base.Strings;
 import org.apache.hadoop.io.LongWritable;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -44,10 +45,11 @@ import javax.annotation.Nullable;
  */
 @Plugin(type = BatchSource.PLUGIN_TYPE)
 @Name("DynamoDB")
-@Description("DynamoDB Batch Source that will read the data items from AWS DynamoDB table and emit each item as a " +
-  "JSON string, in the body field of the StructuredRecord, that can be further processed downstream in the pipeline.")
+@Description("DynamoDB Batch Source that will read the data items from AWS DynamoDB table and convert each item into " +
+  "the StructuredRecord as per the schema specified by the user, that can be further processed downstream in the " +
+  "pipeline.")
 public class DynamoDBBatchSource extends BatchSource<LongWritable, Item, StructuredRecord> {
-  private static final Schema OUTPUT_SCHEMA = Schema.recordOf(
+  private static final Schema DEFAULT_OUTPUT_SCHEMA = Schema.recordOf(
     "output", Schema.Field.of("body", Schema.of(Schema.Type.STRING)));
   private final DynamoDBConfig config;
 
@@ -58,7 +60,12 @@ public class DynamoDBBatchSource extends BatchSource<LongWritable, Item, Structu
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     config.validateTableName();
-    pipelineConfigurer.getStageConfigurer().setOutputSchema(OUTPUT_SCHEMA);
+    try {
+      Schema schema = Schema.parseJson(config.schema);
+      pipelineConfigurer.getStageConfigurer().setOutputSchema(schema);
+    } catch (Exception e) {
+      throw new IllegalArgumentException("Invalid output schema: " + e.getMessage(), e);
+    }
   }
 
   @Override
@@ -68,9 +75,55 @@ public class DynamoDBBatchSource extends BatchSource<LongWritable, Item, Structu
 
   @Override
   public void transform(KeyValue<LongWritable, Item> input, Emitter<StructuredRecord> emitter) throws Exception {
-    StructuredRecord.Builder builder = StructuredRecord.builder(OUTPUT_SCHEMA);
-    builder.set("body", input.getValue().toJSONPretty());
+    StructuredRecord.Builder builder;
+    Schema schema;
+    try {
+      schema = Schema.parseJson(config.schema);
+    } catch (IOException e) {
+      throw new IllegalArgumentException("Invalid schema: " + e.getMessage());
+    }
+    if (schema.equals(DEFAULT_OUTPUT_SCHEMA)) {
+      builder = StructuredRecord.builder(schema);
+      builder.set("body", input.getValue().toJSONPretty());
+    } else {
+      builder = StructuredRecord.builder(schema);
+      for (Schema.Field field : schema.getFields()) {
+        builder.set(field.getName(), extractValue(input.getValue(), field));
+      }
+    }
     emitter.emit(builder.build());
+  }
+
+  /**
+   * Extracts and returns the value from item as per the type specified.
+   *
+   * @param item
+   * @param field
+   * @return
+   * @throws Exception
+   */
+  private Object extractValue(Item item, Schema.Field field) throws Exception {
+    switch (field.getSchema().getType()) {
+      case NULL:
+        return null;
+      case BOOLEAN:
+        return item.getBOOL(field.getName());
+      case INT:
+        return item.getInt(field.getName());
+      case LONG:
+        return item.getLong(field.getName());
+      case FLOAT:
+        return item.getFloat(field.getName());
+      case DOUBLE:
+        return item.getDouble(field.getName());
+      case BYTES:
+        return item.getBinary(field.getName());
+      case STRING:
+        return item.getString(field.getName());
+    }
+    throw new IOException(
+      String.format("Unsupported schema type: '%s' for field: '%s'. Supported types are 'boolean, int, long, float," +
+                      "double, binary and string'.", field.getSchema(), field.getName()));
   }
 
   /**
@@ -146,10 +199,14 @@ public class DynamoDBBatchSource extends BatchSource<LongWritable, Item, Structu
     @Macro
     private String readThroughputPercentage;
 
+    @Description("Specifies the schema that has to be output. If not specified, then by default each item will be " +
+      "emitted as a JSON string, in the 'body' field of the StructuredRecord.")
+    private String schema;
+
     public DynamoDBConfig(String referenceName, String accessKey, String secretAccessKey, @Nullable String region,
                           @Nullable String endpointUrl, String tableName, String query, @Nullable String filterQuery,
                           @Nullable String nameMappings, String valueMappings, String placeholderType,
-                          @Nullable String readThroughput, @Nullable String readThroughputPercentage) {
+                          @Nullable String readThroughput, @Nullable String readThroughputPercentage, String schema) {
       super(referenceName);
       this.accessKey = accessKey;
       this.secretAccessKey = secretAccessKey;
@@ -163,6 +220,7 @@ public class DynamoDBBatchSource extends BatchSource<LongWritable, Item, Structu
       this.placeholderType = placeholderType;
       this.readThroughput = readThroughput;
       this.readThroughputPercentage = readThroughputPercentage;
+      this.schema = schema;
     }
 
     /**

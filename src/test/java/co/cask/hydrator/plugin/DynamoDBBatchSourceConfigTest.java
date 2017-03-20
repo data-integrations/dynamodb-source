@@ -29,7 +29,7 @@ public class DynamoDBBatchSourceConfigTest {
   public void testInvalidTableNameLength() throws Exception {
     DynamoDBBatchSource.DynamoDBConfig config = new
       DynamoDBBatchSource.DynamoDBConfig("Referencename", "testKey", "testKey", "us-east-1", "", "tm", "Id = :v_iD",
-                                         "", "", ":v_iD|120", ":v_iD|int", "", "");
+                                         "", "", ":v_iD|120", ":v_iD|int", "", "", "");
 
     MockPipelineConfigurer configurer = new MockPipelineConfigurer(null);
     try {
@@ -45,7 +45,7 @@ public class DynamoDBBatchSourceConfigTest {
   public void testInvalidTableName() throws Exception {
     DynamoDBBatchSource.DynamoDBConfig config = new
       DynamoDBBatchSource.DynamoDBConfig("Referencename", "testKey", "testKey", "us-east-1", "", "wrong%^table",
-                                         "Id = :v_iD", "", "", ":v_iD|120", ":v_iD|int", "", "");
+                                         "Id = :v_iD", "", "", ":v_iD|120", ":v_iD|int", "", "", "");
     MockPipelineConfigurer configurer = new MockPipelineConfigurer(null);
     try {
       new DynamoDBBatchSource(config).configurePipeline(configurer);
