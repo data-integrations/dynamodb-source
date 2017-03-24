@@ -3,9 +3,9 @@
 
 Description
 -----------
-DynamoDB Batch Source that will read the data items from AWS DynamoDB table and emit each item as a JSON string, in the
-body field of the StructuredRecord, that can be further processed downstream in the pipeline. User can provide the
-query, to read the items from DynamoDB table.
+DynamoDB Batch Source that will read the data items from AWS DynamoDB table and convert each item into the
+StructuredRecord as per the schema specified by the user, that can be further processed downstream in the pipeline.
+User can provide the query, to read the items from DynamoDB table.
 
 Properties
 ----------
@@ -49,6 +49,9 @@ with their data types. This is a comma-separated list of key-value pairs, where 
 **readThroughputPercentage:** Read Throughput Percentage for AWS DynamoDB table to connect to. Default is 0.5.
 (Macro Enabled)
 
+**schema:** Specifies the schema that has to be output. If not specified, then by default each item will be emitted
+as a JSON string, in the 'body' field of the StructuredRecord.
+
 Conditions
 ----------
 Any invalid configuration('accessKey' or 'secretAccessKey' or 'region' or 'endpointUrl') for connecting to AWS DynamoDB
@@ -61,6 +64,9 @@ Table must exists in the DynamoDB, before reading the items. If not, then it wil
 
 Query must follow the DynamoDB rules and supported format. Any mismatch in the query will result into the runtime
 failure.
+
+If user does not provide the output schema, then by default each item will be emitted as a JSON string, in the 'body'
+ field of the StructuredRecord.
 
 Example
 -------

@@ -4,8 +4,8 @@ DynamoDB Source Plugin
 
 Introduction
 ============
-DynamoDB Batch Source that will read the data items from AWS DynamoDB table and emit each item as a JSON string, in the
-body field of the StructuredRecord, that can be further processed downstream in the pipeline.
+DynamoDB Batch Source that will read the data items from AWS DynamoDB table and convert each item into the
+StructuredRecord as per the schema specified by the user, that can be further processed downstream in the pipeline.
 
 Getting Started
 ===============
