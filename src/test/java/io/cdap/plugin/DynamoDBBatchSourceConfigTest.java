@@ -13,10 +13,10 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package co.cask.hydrator.plugin;
+package io.cdap.plugin;
 
-import co.cask.cdap.etl.mock.common.MockPipelineConfigurer;
-import co.cask.hydrator.plugin.batch.DynamoDBBatchSource;
+import io.cdap.cdap.etl.mock.common.MockPipelineConfigurer;
+import io.cdap.plugin.batch.DynamoDBBatchSource;
 import org.junit.Assert;
 import org.junit.Test;
 
