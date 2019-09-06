@@ -13,9 +13,9 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package co.cask.hydrator.plugin.batch;
+package io.cdap.plugin.dynamo.source;
 
-import co.cask.hydrator.plugin.batch.split.DynamoDBSplitGenerator;
+import io.cdap.plugin.dynamo.source.split.DynamoDBSplitGenerator;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.InputFormat;
 import org.apache.hadoop.mapreduce.InputSplit;

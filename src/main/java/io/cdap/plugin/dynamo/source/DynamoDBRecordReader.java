@@ -13,10 +13,8 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package co.cask.hydrator.plugin.batch;
+package io.cdap.plugin.dynamo.source;
 
-import co.cask.cdap.api.dataset.lib.KeyValue;
-import co.cask.hydrator.common.KeyValueListParser;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.regions.RegionUtils;
 import com.amazonaws.regions.Regions;
@@ -32,6 +30,8 @@ import com.amazonaws.services.dynamodbv2.document.utils.ValueMap;
 import com.amazonaws.services.dynamodbv2.model.TableDescription;
 import com.amazonaws.services.dynamodbv2.model.TableStatus;
 import com.google.common.base.Strings;
+import io.cdap.cdap.api.dataset.lib.KeyValue;
+import io.cdap.plugin.common.KeyValueListParser;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.mapreduce.InputSplit;

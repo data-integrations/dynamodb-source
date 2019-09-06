@@ -13,7 +13,7 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package co.cask.hydrator.plugin.batch;
+package io.cdap.plugin.dynamo.source;
 
 /**
  * An interface that contains constants to be used for DynamoDBBatchSource.
