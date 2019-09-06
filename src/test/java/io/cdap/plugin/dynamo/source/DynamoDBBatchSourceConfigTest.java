@@ -13,10 +13,9 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package io.cdap.plugin;
+package io.cdap.plugin.dynamo.source;
 
 import io.cdap.cdap.etl.mock.common.MockPipelineConfigurer;
-import io.cdap.plugin.batch.DynamoDBBatchSource;
 import org.junit.Assert;
 import org.junit.Test;
 
