@@ -15,44 +15,113 @@
  */
 package io.cdap.plugin.dynamo.source;
 
-import io.cdap.cdap.etl.mock.common.MockPipelineConfigurer;
+import io.cdap.cdap.api.data.schema.Schema;
+import io.cdap.cdap.etl.api.validation.CauseAttributes;
+import io.cdap.cdap.etl.api.validation.ValidationFailure;
+import io.cdap.cdap.etl.mock.validation.MockFailureCollector;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 /**
- * Unit Tests for DynamoDBConfig.
+ * Unit Tests for DynamoDBBatchSourceConfig.
  */
 public class DynamoDBBatchSourceConfigTest {
+  private static final String MOCK_STAGE = "mockStage";
+  private static final Schema SCHEMA = Schema.recordOf(
+    "schema", Schema.Field.of("ID", Schema.nullableOf(Schema.of(Schema.Type.LONG))));
+  private static final DynamoDBBatchSourceConfig VALID_CONFIG = new DynamoDBBatchSourceConfig(
+    "Referencename",
+    "testKey",
+    "testKey",
+    "us-east-1",
+    "",
+    "table",
+    "Id = :v_iD",
+    "",
+    "",
+    ":v_iD|120",
+    ":v_iD|int",
+    "",
+    "",
+    SCHEMA.toString()
+  );
 
   @Test
-  public void testInvalidTableNameLength() throws Exception {
-    DynamoDBBatchSource.DynamoDBConfig config = new
-      DynamoDBBatchSource.DynamoDBConfig("Referencename", "testKey", "testKey", "us-east-1", "", "tm", "Id = :v_iD",
-                                         "", "", ":v_iD|120", ":v_iD|int", "", "", "");
-
-    MockPipelineConfigurer configurer = new MockPipelineConfigurer(null);
-    try {
-      new DynamoDBBatchSource(config).configurePipeline(configurer);
-      Assert.fail();
-    } catch (IllegalArgumentException e) {
-      Assert.assertEquals("Table name 'tm' does not follow the DynamoDB naming rules. Table name must be between 3 " +
-                            "and 255 characters long.", e.getMessage());
-    }
+  public void testValidConfig() {
+    MockFailureCollector failureCollector = new MockFailureCollector("mockStage");
+    VALID_CONFIG.validate(failureCollector);
+    Assert.assertTrue(failureCollector.getValidationFailures().isEmpty());
   }
 
   @Test
-  public void testInvalidTableName() throws Exception {
-    DynamoDBBatchSource.DynamoDBConfig config = new
-      DynamoDBBatchSource.DynamoDBConfig("Referencename", "testKey", "testKey", "us-east-1", "", "wrong%^table",
-                                         "Id = :v_iD", "", "", ":v_iD|120", ":v_iD|int", "", "", "");
-    MockPipelineConfigurer configurer = new MockPipelineConfigurer(null);
-    try {
-      new DynamoDBBatchSource(config).configurePipeline(configurer);
-      Assert.fail();
-    } catch (IllegalArgumentException e) {
-      Assert.assertEquals("Table name 'wrong%^table' does not follow the DynamoDB naming rules. Table names can " +
-                            "contain only the following characters: 'a-z, A-Z, 0-9, underscore(_), dot(.) and dash(-)" +
-                            "'.", e.getMessage());
-    }
+  public void testInvalidTableNameLength() {
+    DynamoDBBatchSourceConfig config = DynamoDBBatchSourceConfig.builder(VALID_CONFIG)
+      .setTableName("tm")
+      .build();
+
+    MockFailureCollector failureCollector = new MockFailureCollector(MOCK_STAGE);
+    config.validate(failureCollector);
+    assertValidationFailed(failureCollector, DynamoDBBatchSourceConfig.TABLE_NAME);
+  }
+
+  @Test
+  public void testInvalidTableName() {
+    DynamoDBBatchSourceConfig config = DynamoDBBatchSourceConfig.builder(VALID_CONFIG)
+      .setTableName("wrong%^table")
+      .build();
+
+    MockFailureCollector failureCollector = new MockFailureCollector(MOCK_STAGE);
+    config.validate(failureCollector);
+    assertValidationFailed(failureCollector, DynamoDBBatchSourceConfig.TABLE_NAME);
+  }
+
+  @Test
+  public void testEmptySchema() {
+    DynamoDBBatchSourceConfig config = DynamoDBBatchSourceConfig.builder(VALID_CONFIG)
+      .setSchema("")
+      .build();
+
+    MockFailureCollector failureCollector = new MockFailureCollector(MOCK_STAGE);
+    config.validate(failureCollector);
+    assertValidationFailed(failureCollector, DynamoDBBatchSourceConfig.SCHEMA);
+  }
+
+  @Test
+  public void testInvalidSchema() {
+    DynamoDBBatchSourceConfig config = DynamoDBBatchSourceConfig.builder(VALID_CONFIG)
+      .setSchema("{[}")
+      .build();
+
+    MockFailureCollector failureCollector = new MockFailureCollector(MOCK_STAGE);
+    config.validate(failureCollector);
+    assertValidationFailed(failureCollector, DynamoDBBatchSourceConfig.SCHEMA);
+    assertValidationFailedWithStacktrace(failureCollector);
+  }
+
+  private static void assertValidationFailed(MockFailureCollector failureCollector, String paramName) {
+    List<ValidationFailure> failureList = failureCollector.getValidationFailures();
+    Assert.assertEquals(1, failureList.size());
+    ValidationFailure failure = failureList.get(0);
+    List<ValidationFailure.Cause> causeList = failure.getCauses()
+      .stream()
+      .filter(cause -> cause.getAttribute(CauseAttributes.STAGE_CONFIG) != null)
+      .collect(Collectors.toList());
+    Assert.assertEquals(1, causeList.size());
+    ValidationFailure.Cause cause = causeList.get(0);
+    Assert.assertEquals(paramName, cause.getAttribute(CauseAttributes.STAGE_CONFIG));
+  }
+
+  private static void assertValidationFailedWithStacktrace(MockFailureCollector failureCollector) {
+    List<ValidationFailure> failureList = failureCollector.getValidationFailures();
+    Assert.assertEquals(1, failureList.size());
+    ValidationFailure failure = failureList.get(0);
+    List<ValidationFailure.Cause> causeList = failure.getCauses()
+      .stream()
+      .filter(cause -> cause.getAttribute(CauseAttributes.STACKTRACE) != null)
+      .collect(Collectors.toList());
+    Assert.assertEquals(1, causeList.size());
   }
 }
