@@ -27,6 +27,8 @@ import io.cdap.cdap.api.dataset.lib.KeyValue;
 import io.cdap.cdap.etl.api.Emitter;
 import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
+import io.cdap.cdap.etl.api.StageConfigurer;
+import io.cdap.cdap.etl.api.batch.BatchRuntimeContext;
 import io.cdap.cdap.etl.api.batch.BatchSource;
 import io.cdap.cdap.etl.api.batch.BatchSourceContext;
 import org.apache.hadoop.io.LongWritable;
@@ -47,27 +49,41 @@ public class DynamoDBBatchSource extends BatchSource<LongWritable, Item, Structu
   private static final Schema DEFAULT_OUTPUT_SCHEMA = Schema.recordOf(
     "output", Schema.Field.of("body", Schema.of(Schema.Type.STRING)));
   private final DynamoDBBatchSourceConfig config;
+  private Schema schema;
 
   public DynamoDBBatchSource(DynamoDBBatchSourceConfig config) {
     this.config = config;
   }
 
   @Override
+  public void initialize(BatchRuntimeContext context) {
+    schema = config.getParsedSchema();
+  }
+
+  @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
-    FailureCollector failureCollector = pipelineConfigurer.getStageConfigurer().getFailureCollector();
+    StageConfigurer stageConfigurer = pipelineConfigurer.getStageConfigurer();
+    FailureCollector failureCollector = stageConfigurer.getFailureCollector();
+
     config.validate(failureCollector);
     failureCollector.getOrThrowException();
+
+    stageConfigurer.setOutputSchema(config.getParsedSchema());
   }
 
   @Override
   public void prepareRun(BatchSourceContext context) throws Exception {
+    FailureCollector failureCollector = context.getFailureCollector();
+    config.validate(failureCollector);
+    failureCollector.getOrThrowException();
+
     context.setInput(Input.of(config.referenceName, new DynamoDBInputFormatProvider(config)));
   }
 
   @Override
   public void transform(KeyValue<LongWritable, Item> input, Emitter<StructuredRecord> emitter) throws Exception {
     StructuredRecord.Builder builder;
-    Schema schema = config.getParsedSchema();
+
     if (schema.equals(DEFAULT_OUTPUT_SCHEMA)) {
       builder = StructuredRecord.builder(schema);
       builder.set("body", input.getValue().toJSONPretty());
@@ -77,6 +93,7 @@ public class DynamoDBBatchSource extends BatchSource<LongWritable, Item, Structu
         builder.set(field.getName(), extractValue(input.getValue(), field));
       }
     }
+
     emitter.emit(builder.build());
   }
 

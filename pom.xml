@@ -80,11 +80,7 @@
     <hadoop.version>2.3.0</hadoop.version>
     <junit.version>4.11</junit.version>
     <slf4j.version>1.7.5</slf4j.version>
-    <hydrator.version>2.2.0</hydrator.version>
-    <widgets.dir>widgets</widgets.dir>
-    <docs.dir>docs</docs.dir>
-    <!-- this is here because project.basedir evaluates to null in the script build step -->
-    <main.basedir>${project.basedir}</main.basedir>
+    <hydrator.version>2.3.0-SNAPSHOT</hydrator.version>
   </properties>
 
   <dependencies>

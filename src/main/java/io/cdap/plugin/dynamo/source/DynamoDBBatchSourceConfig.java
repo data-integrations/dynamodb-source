@@ -22,6 +22,7 @@ import io.cdap.cdap.api.annotation.Macro;
 import io.cdap.cdap.api.annotation.Name;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.etl.api.FailureCollector;
+import io.cdap.plugin.common.IdUtils;
 import io.cdap.plugin.common.ReferencePluginConfig;
 
 import java.io.IOException;
@@ -251,7 +252,35 @@ public class DynamoDBBatchSourceConfig extends ReferencePluginConfig {
   }
 
   public void validate(FailureCollector failureCollector) {
+    IdUtils.validateReferenceName(referenceName, failureCollector);
+
+    if (!containsMacro(ACCESS_KEY) && Strings.isNullOrEmpty(accessKey)) {
+      failureCollector.addFailure("Access key must be specified.", null)
+        .withConfigProperty(ACCESS_KEY);
+    }
+
+    if (!containsMacro(SECRET_ACCESS_KEY) && Strings.isNullOrEmpty(secretAccessKey)) {
+      failureCollector.addFailure("Secret access key must be specified.", null)
+        .withConfigProperty(SECRET_ACCESS_KEY);
+    }
+
     validateTableName(failureCollector);
+
+    if (!containsMacro(QUERY) && Strings.isNullOrEmpty(query)) {
+      failureCollector.addFailure("Query must be specified.", null)
+        .withConfigProperty(QUERY);
+    }
+
+    if (!containsMacro(VALUE_MAPPINGS) && Strings.isNullOrEmpty(valueMappings)) {
+      failureCollector.addFailure("Value mappings must be specified.", null)
+        .withConfigProperty(VALUE_MAPPINGS);
+    }
+
+    if (!containsMacro(PLACEHOLDER_TYPE) && Strings.isNullOrEmpty(placeholderType)) {
+      failureCollector.addFailure("Placeholder type must be specified.", null)
+        .withConfigProperty(PLACEHOLDER_TYPE);
+    }
+
     validateSchema(failureCollector);
   }
 
@@ -267,19 +296,22 @@ public class DynamoDBBatchSourceConfig extends ReferencePluginConfig {
    * Validates whether the table name follows the DynamoDB naming rules and conventions or not.
    */
   private void validateTableName(FailureCollector failureCollector) {
-    int tableNameLength = tableName.length();
-    if (tableNameLength < 3 || tableNameLength > 255) {
-      failureCollector.addFailure(
-        String.format("Table name '%s' does not follow the DynamoDB naming rules.", tableName),
-        "Table name must be between 3 and 255 characters long.")
+    if (Strings.isNullOrEmpty(tableName)) {
+      failureCollector.addFailure("Table name must be specified.", null)
         .withConfigProperty(TABLE_NAME);
-    }
+    } else {
+      int tableNameLength = tableName.length();
+      if (tableNameLength < 3 || tableNameLength > 255) {
+        failureCollector.addFailure(
+          String.format("Table name '%s' does not follow the DynamoDB naming rules.", tableName),
+          "Table name must be between 3 and 255 characters long.")
+          .withConfigProperty(TABLE_NAME);
+      }
 
-    String pattern = "^[a-zA-Z0-9_.-]+$";
-    Pattern patternObj = Pattern.compile(pattern);
-
-    if (!Strings.isNullOrEmpty(tableName)) {
+      String pattern = "^[a-zA-Z0-9_.-]+$";
+      Pattern patternObj = Pattern.compile(pattern);
       Matcher matcher = patternObj.matcher(tableName);
+
       if (!matcher.find()) {
         failureCollector.addFailure(
           String.format("Table name '%s' does not follow the DynamoDB naming rules.", tableName),
@@ -292,8 +324,8 @@ public class DynamoDBBatchSourceConfig extends ReferencePluginConfig {
   }
 
   private void validateSchema(FailureCollector failureCollector) {
-    if (Strings.isNullOrEmpty(tableName)) {
-      failureCollector.addFailure("No output schema", "Schema must be specified")
+    if (Strings.isNullOrEmpty(schema)) {
+      failureCollector.addFailure("Schema must be specified.", null)
         .withConfigProperty(SCHEMA);
     } else {
       try {

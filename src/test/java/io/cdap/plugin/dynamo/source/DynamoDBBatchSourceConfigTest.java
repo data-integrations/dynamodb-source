@@ -30,6 +30,7 @@ import java.util.stream.Collectors;
  */
 public class DynamoDBBatchSourceConfigTest {
   private static final String MOCK_STAGE = "mockStage";
+  private static final String REFERENCE_NAME = "referenceName";
   private static final Schema SCHEMA = Schema.recordOf(
     "schema", Schema.Field.of("ID", Schema.nullableOf(Schema.of(Schema.Type.LONG))));
   private static final DynamoDBBatchSourceConfig VALID_CONFIG = new DynamoDBBatchSourceConfig(
@@ -57,6 +58,50 @@ public class DynamoDBBatchSourceConfigTest {
   }
 
   @Test
+  public void testInvalidReferenceName() {
+    DynamoDBBatchSourceConfig config = DynamoDBBatchSourceConfig.builder(VALID_CONFIG)
+      .setReferenceName("#")
+      .build();
+
+    MockFailureCollector failureCollector = new MockFailureCollector(MOCK_STAGE);
+    config.validate(failureCollector);
+    assertValidationFailed(failureCollector, REFERENCE_NAME);
+  }
+
+  @Test
+  public void testEmptyAccessKey() {
+    DynamoDBBatchSourceConfig config = DynamoDBBatchSourceConfig.builder(VALID_CONFIG)
+      .setAccessKey("")
+      .build();
+
+    MockFailureCollector failureCollector = new MockFailureCollector(MOCK_STAGE);
+    config.validate(failureCollector);
+    assertValidationFailed(failureCollector, DynamoDBBatchSourceConfig.ACCESS_KEY);
+  }
+
+  @Test
+  public void testEmptySecretAccessFile() {
+    DynamoDBBatchSourceConfig config = DynamoDBBatchSourceConfig.builder(VALID_CONFIG)
+      .setSecretAccessKey("")
+      .build();
+
+    MockFailureCollector failureCollector = new MockFailureCollector(MOCK_STAGE);
+    config.validate(failureCollector);
+    assertValidationFailed(failureCollector, DynamoDBBatchSourceConfig.SECRET_ACCESS_KEY);
+  }
+
+  @Test
+  public void testEmptyTableName() {
+    DynamoDBBatchSourceConfig config = DynamoDBBatchSourceConfig.builder(VALID_CONFIG)
+      .setTableName("")
+      .build();
+
+    MockFailureCollector failureCollector = new MockFailureCollector(MOCK_STAGE);
+    config.validate(failureCollector);
+    assertValidationFailed(failureCollector, DynamoDBBatchSourceConfig.TABLE_NAME);
+  }
+
+  @Test
   public void testInvalidTableNameLength() {
     DynamoDBBatchSourceConfig config = DynamoDBBatchSourceConfig.builder(VALID_CONFIG)
       .setTableName("tm")
@@ -76,6 +121,39 @@ public class DynamoDBBatchSourceConfigTest {
     MockFailureCollector failureCollector = new MockFailureCollector(MOCK_STAGE);
     config.validate(failureCollector);
     assertValidationFailed(failureCollector, DynamoDBBatchSourceConfig.TABLE_NAME);
+  }
+
+  @Test
+  public void testEmptyQuery() {
+    DynamoDBBatchSourceConfig config = DynamoDBBatchSourceConfig.builder(VALID_CONFIG)
+      .setQuery("")
+      .build();
+
+    MockFailureCollector failureCollector = new MockFailureCollector(MOCK_STAGE);
+    config.validate(failureCollector);
+    assertValidationFailed(failureCollector, DynamoDBBatchSourceConfig.QUERY);
+  }
+
+  @Test
+  public void testEmptyValueMappings() {
+    DynamoDBBatchSourceConfig config = DynamoDBBatchSourceConfig.builder(VALID_CONFIG)
+      .setValueMappings("")
+      .build();
+
+    MockFailureCollector failureCollector = new MockFailureCollector(MOCK_STAGE);
+    config.validate(failureCollector);
+    assertValidationFailed(failureCollector, DynamoDBBatchSourceConfig.VALUE_MAPPINGS);
+  }
+
+  @Test
+  public void testEmptyPlaceholderType() {
+    DynamoDBBatchSourceConfig config = DynamoDBBatchSourceConfig.builder(VALID_CONFIG)
+      .setPlaceholderType("")
+      .build();
+
+    MockFailureCollector failureCollector = new MockFailureCollector(MOCK_STAGE);
+    config.validate(failureCollector);
+    assertValidationFailed(failureCollector, DynamoDBBatchSourceConfig.PLACEHOLDER_TYPE);
   }
 
   @Test
